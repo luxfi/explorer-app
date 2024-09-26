@@ -1,22 +1,3 @@
-interface FileSystemFileEntry {
-  file: (successCallback: (file: File) => void, errorCallback?: (error: DOMException) => void) => void;
-  isFile: boolean;
-  isDirectory: boolean;
-}
-
-interface FileSystemDirectoryEntry {
-  createReader: () => FileSystemDirectoryReader;
-  isFile: boolean;
-  isDirectory: boolean;
-}
-
-interface FileSystemDirectoryReader {
-  readEntries: (
-    successCallback: (entries: Array<FileSystemFileEntry | FileSystemDirectoryEntry>) => void,
-    errorCallback?: (error: DOMException) => void
-  ) => void;
-}
-
 // Function to get all files in drop directory
 export async function getAllFileEntries(dataTransferItemList: DataTransferItemList): Promise<Array<FileSystemFileEntry>> {
   const fileEntries: Array<FileSystemFileEntry> = [];
@@ -46,7 +27,7 @@ export async function getAllFileEntries(dataTransferItemList: DataTransferItemLi
 
 // Get all the entries (files or sub-directories) in a directory
 // by calling readEntries until it returns empty array
-async function readAllDirectoryEntries(directoryReader: FileSystemDirectoryReader): Promise<Array<FileSystemFileEntry>> {
+async function readAllDirectoryEntries(directoryReader: DirectoryReader) {
   const entries: Array<FileSystemFileEntry> = [];
   let readEntries = await readEntriesPromise(directoryReader);
 
@@ -60,7 +41,7 @@ async function readAllDirectoryEntries(directoryReader: FileSystemDirectoryReade
 // Wrap readEntries in a promise to make working with readEntries easier
 // readEntries will return only some of the entries in a directory
 // e.g. Chrome returns at most 100 entries at a time
-async function readEntriesPromise(directoryReader: FileSystemDirectoryReader): Promise<Array<FileSystemFileEntry> | undefined> {
+async function readEntriesPromise(directoryReader: DirectoryReader): Promise<Array<FileSystemFileEntry> | undefined> {
   try {
     return await new Promise((resolve, reject) => {
       directoryReader.readEntries(
@@ -70,14 +51,13 @@ async function readEntriesPromise(directoryReader: FileSystemDirectoryReader): P
         reject,
       );
     });
-  } catch (err) {
-    return undefined;
-  }
+  } catch (err) {}
 }
 
 export function convertFileEntryToFile(entry: FileSystemFileEntry): Promise<File> {
   return new Promise((resolve) => {
-    entry.file((file: File) => {
+    entry.file(async(file: File) => {
+    //   const newFile = new File([ file ], entry.fullPath, { lastModified: file.lastModified, type: file.type });
       resolve(file);
     });
   });
